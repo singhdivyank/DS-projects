@@ -1,6 +1,7 @@
 python-dotenv==1.0.0
 SpeechRecognition==3.8.1
 PyAudio==0.2.14
-gradio==4.11.0
+gradio_client==0.2.7
+gradio==3.36.1
 googletrans==3.0.0
 gTTS==2.5.0

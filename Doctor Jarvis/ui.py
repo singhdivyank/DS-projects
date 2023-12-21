@@ -1,5 +1,4 @@
 import gradio as gr
-
 from googletrans import Translator
 
 from typing import List
@@ -11,7 +10,7 @@ from speechOps import (
 )
 
 # introduction message
-MAIN_MSG = "send message from microphone. To stop, say 'thank you'"
+MAIN_MSG = "send message from microphone. To stop, say 'thanks'"
 # define all supported language codes
 LANGUAGES = {
     "bengali": "bn",
@@ -42,67 +41,83 @@ def translation(for_usr: str, lan_code: str) -> str:
         translation (str): translated text
     """
 
-    translation = Translator.translate(for_usr, dest=lan_code)
+    translation_ob = Translator().translate(text=for_usr, dest=lan_code)
+    translation = translation_ob.pronunciation
     return translation
 
 def run_diagnosis():
     return "Hello"
 
-def call_doctor(user_profile: List) -> str:
+def call_doctor(language: str, gender: List, age: int) -> str:
     """
     using the voice assistant for diagnosis
 
     Params:
-        user_profile (List): user details
+        language (str): chosen language
+        gender (str): user's gender
+        age (int): user's age
     
     Returns:
         str: prescription file path
     """
-    
-    language = user_profile[0]
+
     lan_code = LANGUAGES.get(language)
     print(lan_code)
+
     # send message to user
     message = translation(for_usr=MAIN_MSG, lan_code=lan_code) if not lan_code == 'en' else MAIN_MSG
-    gr.Textbox(value=message, lines=1, 
-               label='welcome message', show_label=True
-               )
-    # get user message
-    user_text = Transcribe(language=lan_code).get_text()
-    print(user_text)
-    # get translated message
-    user_text = translation(for_usr=user_text, lan_code='en') if not lan_code == 'en' else user_text
-    # iterative process
-    while not user_text.lower() == 'thank you':
-        # render user message
-        gr.Textbox(value=user_text, 
-                   lines=5, 
-                   label='user message', 
-                   show_label=True
-                   )
-        # TODO- LangChain implementation
-        doc_notes = run_diagnosis()
-        # get translated diagnosis results
-        doc_notes = translation(for_usr=doc_notes, lan_code=lan_code) if not lan_code == 'en' else doc_notes
-        # generate audio
-        Translate(
-            txt_msg=doc_notes,
-            language=lan_code
-        ).text_to_speech()
-        # render diagnosis results
-        gr.Textbox(value=doc_notes, 
-                   lines=10, 
-                   label='doctor message', 
-                   show_label=True
-                   )
-        # create prescription
-        prescription_ob = Prescription(patient_notes=user_text, 
-                                       doc_notes=doc_notes,
-                                       age=user_profile[-1],
-                                       gender=user_profile[1]
-                                       )
-    # TODO- render the file
-    return prescription_ob.prescription_name
+    print(message)
+    gr.Textbox(
+        value=message, 
+        lines=1, 
+        label='welcome message', 
+        show_label=True
+    )
+
+    try:
+        # get user message
+        user_text = Transcribe(language=lan_code).get_text()
+        print(user_text)
+        # get translated message
+        user_text = translation(for_usr=user_text, lan_code='en') if not lan_code == 'en' else user_text
+        # iterative process
+        while not user_text.lower() == 'thanks':
+            # render user message
+            gr.Textbox(
+                value=user_text, 
+                lines=5, 
+                label='user message', 
+                show_label=True
+            )
+            # TODO- LangChain implementation
+            doc_notes = run_diagnosis()
+            # get translated diagnosis results
+            doc_notes = translation(for_usr=doc_notes, lan_code=lan_code) if not lan_code == 'en' else doc_notes
+            # generate audio
+            Translate(
+                txt_msg=doc_notes,
+                language=lan_code
+            ).text_to_speech()
+            # render diagnosis results
+            gr.Textbox(
+                value=doc_notes, 
+                lines=10, 
+                label='doctor message', 
+                show_label=True
+            )
+            # create prescription
+            prescription_ob = Prescription(
+                patient_notes=user_text, 
+                doc_notes=doc_notes,
+                age=str(age),
+                gender=gender[0] if gender in ["Male", "Female"] else "Others"
+            )
+        # TODO- render the file
+        return prescription_ob.prescription_name
+    except Exception as error:
+        print(f"exception :: {str(error)}")
+        return error
+    
 
 def create_dashboard(server: str, port: int):
     """
@@ -113,37 +128,33 @@ def create_dashboard(server: str, port: int):
         port (int): dedicated server port
     """
 
-    inputs = [
-        gr.Dropdown(
-            choices=list(LANGUAGES.keys()),
-            multiselect=False,
-            label="language selection",
-            show_label=True,
-            interactive=True
-        ),
-        gr.CheckboxGroup(
-            choices=["Male", "Female", "Prefer not to disclose"],
-            label="gender selection",
-            show_label=True,
-            interactive=True,
-        ),
-        gr.Slider(
-            minimum=10,
-            maximum=50,
-            step=2,
-            label="age selection",
-            show_label=True,
-            interactive=True
-        )
-    ]
-
     # create gradio UI
-    ui = gr.Interface(
+    ui=gr.Interface(
         fn=call_doctor,
-        inputs=inputs,
-        outputs=gr.Textbox(lines=1, 
-                           label="prescription file",
-                           show_label=True
-                           )
+        inputs=[
+            gr.Dropdown(
+                choices=list(LANGUAGES.keys()),
+                multiselect=False,
+                label="language selection",
+                show_label=True,
+                interactive=True
+            ),
+            gr.CheckboxGroup(
+                choices=["Male", "Female", "Prefer not to disclose"],
+                label="gender selection",
+                show_label=True,
+                interactive=True,
+            ),
+            gr.Slider(
+                minimum=10,
+                maximum=50,
+                step=2,
+                label="age selection",
+                show_label=True,
+                interactive=True
+            )
+        ],
+        outputs=["text"]
     )
-    ui.launch(server_name=server, server_port=port)
+    # launch the UI
+    ui.launch(server_name=server, server_port=port, share=False)
