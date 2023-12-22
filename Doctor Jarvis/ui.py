@@ -11,6 +11,8 @@ from speechOps import (
 
 # introduction message
 MAIN_MSG = "send message from microphone. To stop, say 'thanks'"
+# instruction message
+MSG = "please begin"
 # define all supported language codes
 LANGUAGES = {
     "bengali": "bn",
@@ -61,6 +63,11 @@ def call_doctor(language: str, gender: List, age: int) -> str:
         str: prescription file path
     """
 
+    prescription_ob = Prescription(
+        age=str(age),
+        gender=gender[0] if gender[0] in ["Male", "Female"] else "Others"
+    )
+    
     lan_code = LANGUAGES.get(language)
     print(lan_code)
 
@@ -73,15 +80,22 @@ def call_doctor(language: str, gender: List, age: int) -> str:
         label='welcome message', 
         show_label=True
     )
+    message = translation(for_usr=MSG, lan_code=lan_code) if not lan_code == 'en' else MSG
+    print(message)
+    gr.Textbox(
+        value=message, 
+        lines=1, 
+        label='instruction message', 
+        show_label=True
+    )
 
     try:
-        # get user message
-        user_text = Transcribe(language=lan_code).get_text()
-        print(user_text)
-        # get translated message
-        user_text = translation(for_usr=user_text, lan_code='en') if not lan_code == 'en' else user_text
-        # iterative process
-        while not user_text.lower() == 'thanks':
+        while True:
+            # get user message
+            user_text = Transcribe(language=lan_code).get_text()
+            print(user_text)
+            # get translated message
+            user_text = translation(for_usr=user_text, lan_code='en') if not lan_code == 'en' else user_text
             # render user message
             gr.Textbox(
                 value=user_text, 
@@ -93,6 +107,8 @@ def call_doctor(language: str, gender: List, age: int) -> str:
             doc_notes = run_diagnosis()
             # get translated diagnosis results
             doc_notes = translation(for_usr=doc_notes, lan_code=lan_code) if not lan_code == 'en' else doc_notes
+            # create prescription
+            prescription_ob.create_prescription(patient_notes=user_text, doc_notes=doc_notes)
             # generate audio
             Translate(
                 txt_msg=doc_notes,
@@ -105,19 +121,12 @@ def call_doctor(language: str, gender: List, age: int) -> str:
                 label='doctor message', 
                 show_label=True
             )
-            # create prescription
-            prescription_ob = Prescription(
-                patient_notes=user_text, 
-                doc_notes=doc_notes,
-                age=str(age),
-                gender=gender[0] if gender in ["Male", "Female"] else "Others"
-            )
-        # TODO- render the file
-        return prescription_ob.prescription_name
+
+            # TODO- render the file
+            if user_text.lower() == 'thanks':
+                return prescription_ob.prescription_name
     except Exception as error:
-        print(f"exception :: {str(error)}")
-        return error
-    
+        print(f"Exception :: {str(error)}")
 
 def create_dashboard(server: str, port: int):
     """
