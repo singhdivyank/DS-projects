@@ -1,10 +1,9 @@
 import os
-import time
 
+import playsound
 import speech_recognition as sr
 
 from gtts import gTTS
-from pygame import mixer
 
 
 class Transcribe:
@@ -28,36 +27,43 @@ class Transcribe:
                     audio_data=audio, 
                     language=self.language
                 )
-                print(transcribed_txt)
                 return transcribed_txt
         except sr.RequestError:
             return "NO INTERNET CONNECTION"
 
 
-class Translate:
-    def __init__(self, txt_msg: str, language: str):
-        self.txt_msg = txt_msg
+class ToAudio:
+    def __init__(self, language: str):
         self.language = language
-        self.mixer = mixer.init()
+        # audio file name
+        self.audio_file = os.path.join(
+            os.getcwd(), 
+            os.getenv(key='AUDIO_FILE')
+        )
+        self.delete_file()
     
-    def text_to_speech(self):
+    def delete_file(self):
+        """
+        delete audio file
+        """
+
+        if os.path.exists(path=self.audio_file):
+            with open(file=self.audio_file, mode='rb') as f:
+                f.close()
+            os.remove(path=self.audio_file)
+    
+    def text_to_speech(self, txt_msg: str):
         """
         using Google Text to Speech module, 
         recite a text in a given language
-        """
 
-        # name of audio file
-        audio_file = os.path.join(
-            os.getcwd(), 
-            f"{os.getenv('audio_file')}.mp3"
-        )
-        # generate audio using module
-        speech = gTTS(text=self.txt_msg, lang=self.language)
-        # save to .mp3 file
-        speech.save(savefile=audio_file)
-        # play the mp3 file
-        self.mixer.music.load(audio_file)
-        self.mixer.music.play()
-        # wait for music to finish playing
-        while self.mixer.music.get_busy():
-            time.sleep(secs=1)
+        Params:
+            txt_msg (str): text message
+        """
+        
+        audio = gTTS(text=txt_msg, lang=self.language)
+        audio.save(savefile=self.audio_file)
+        audio.timeout = 10
+        audio.speed = 'slow'
+        playsound.playsound(sound=self.audio_file)
+        self.delete_file()   
