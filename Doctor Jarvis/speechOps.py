@@ -27,25 +27,43 @@ class Transcribe:
                     audio_data=audio, 
                     language=self.language
                 )
-                print(transcribed_txt)
                 return transcribed_txt
         except sr.RequestError:
             return "NO INTERNET CONNECTION"
 
 
-class Translate:
-    def __init__(self, txt_msg: str, language: str):
-        self.txt_msg = txt_msg
+class ToAudio:
+    def __init__(self, language: str):
         self.language = language
+        # audio file name
+        self.audio_file = os.path.join(
+            os.getcwd(), 
+            os.getenv(key='AUDIO_FILE')
+        )
+        self.delete_file()
+    
+    def delete_file(self):
+        """
+        delete audio file
+        """
 
-    def text_to_speech(self):
+        if os.path.exists(path=self.audio_file):
+            with open(file=self.audio_file, mode='rb') as f:
+                f.close()
+            os.remove(path=self.audio_file)
+    
+    def text_to_speech(self, txt_msg: str):
         """
         using Google Text to Speech module, 
         recite a text in a given language
-        """
 
-        filename = os.path.join(os.getcwd(), "voice.mp3")
-        audio = gTTS(text=self.txt_msg, lang=self.language)
-        audio.save(savefile=filename)
-        playsound.playsound(sound=filename)
-        os.rmdir(path=filename)        
+        Params:
+            txt_msg (str): text message
+        """
+        
+        audio = gTTS(text=txt_msg, lang=self.language)
+        audio.save(savefile=self.audio_file)
+        audio.timeout = 10
+        audio.speed = 'slow'
+        playsound.playsound(sound=self.audio_file)
+        self.delete_file()   
