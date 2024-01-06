@@ -5,6 +5,8 @@ import speech_recognition as sr
 
 from gtts import gTTS
 
+from consts import AUDIO_FILE
+
 
 class Transcribe:
     def __init__(self, language: str):
@@ -19,8 +21,8 @@ class Transcribe:
         convert audio from microphone to text 
         """
 
-        try:
-            with self.mic as source:
+        with self.mic as source:
+            try:
                 self.recognizer.adjust_for_ambient_noise(source=source)
                 audio = self.recognizer.listen(source=source)
                 transcribed_txt = self.recognizer.recognize_google(
@@ -28,18 +30,15 @@ class Transcribe:
                     language=self.language
                 )
                 return transcribed_txt
-        except sr.RequestError:
-            return "NO INTERNET CONNECTION"
+            except sr.RequestError:
+                return "NO INTERNET CONNECTION"
 
 
 class ToAudio:
     def __init__(self, language: str):
         self.language = language
         # audio file name
-        self.audio_file = os.path.join(
-            os.getcwd(), 
-            os.getenv(key='AUDIO_FILE')
-        )
+        self.audio_file = os.path.join(os.getcwd(), AUDIO_FILE)
         self.delete_file()
     
     def delete_file(self):
@@ -63,7 +62,7 @@ class ToAudio:
         
         audio = gTTS(text=txt_msg, lang=self.language)
         audio.save(savefile=self.audio_file)
-        audio.timeout = 10
+        audio.timeout = 5
         audio.speed = 'slow'
         playsound.playsound(sound=self.audio_file)
         self.delete_file()   

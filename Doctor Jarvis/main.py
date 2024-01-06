@@ -14,7 +14,7 @@ from speechOps import (
     ToAudio
 )
 from perform_translation import Translate
-from diagnosis import perform_diagnosis
+from diagnosis import DocJarvis
 
 load_dotenv(dotenv_path=find_dotenv())
 
@@ -36,6 +36,8 @@ def main(language: str, gender: List, age: str):
     """
     user profile/dashboard
     """
+
+    symptoms = []
     
     # get language code
     lan_code = LANGUAGES.get(language, 'en')
@@ -49,6 +51,10 @@ def main(language: str, gender: List, age: str):
         gender=gender[0] if gender[0] in ["Male", "Female"] else "Others"
     )
     transcribe_ob = Transcribe(language=lan_code)
+    doc_ob = DocJarvis(
+        age=age, 
+        gender=gender
+    )
     
     # get all static messages
     all_msgs = translate_ob.get_msgs()
@@ -67,22 +73,36 @@ def main(language: str, gender: List, age: str):
         for_usr=user_text, 
         llm_flag=True
     ) if not lan_code == 'en' else user_text
-
-    # call LLM and find medication
-    doc_notes = perform_diagnosis(usr_msg=for_doc)
-    print("doc notes:: ", doc_notes)
-    # translate results to user language
-    doc_notes = translate_ob.translation(
-        for_usr=doc_notes, 
-        llm_flag=False
-    ) if not lan_code == 'en' else doc_notes
-    # generate audio message
-    audio_ob.text_to_speech(txt_msg=doc_notes)
     
+    # call LLM and find medication
+    diagnosis_res = doc_ob.perform_diagnosis(usr_msg=for_doc)
+    print("diagnosis results:: ", diagnosis_res)
+    
+    # perform conversation
+    for _, diag_ques in enumerate(diagnosis_res):
+        # translate results to user language
+        doc_notes = translate_ob.translation(
+            for_usr=diag_ques, 
+            llm_flag=False
+        ) if not lan_code == 'en' else diag_ques
+        # generate audio message
+        audio_ob.text_to_speech(txt_msg=doc_notes)
+        # receive input from user
+        symptom = transcribe_ob.get_text()
+        if not symptom == "NO INTERNET CONNECTION":
+            symptoms.append(symptom)
+    if not symptoms:
+        return "please connect to the internet"
+    conversation = list(zip(diagnosis_res, symptoms))
+    
+    # get medication using LLM
+    medication = doc_ob.call_doc(conversation=conversation)
+
     # create prescription
     prescription_ob.create_prescription(
-        patient_notes=user_text, 
-        doc_notes=doc_notes
+        inital_msg = user_text,
+        conversation = conversation,
+        medication = medication
     )
     print("created prescription...")
     return prescription_ob.prescription_file
