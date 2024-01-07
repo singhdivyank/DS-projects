@@ -5,6 +5,8 @@ import speech_recognition as sr
 
 from gtts import gTTS
 
+from consts import AUDIO_FILE
+
 
 class Transcribe:
     def __init__(self, language: str):
@@ -14,45 +16,41 @@ class Transcribe:
         # initialise microphone
         self.mic = sr.Microphone()
     
-    def get_text(self):
+    def get_text(self) -> None:
         """
         convert audio from microphone to text 
         """
 
-        try:
-            with self.mic as source:
+        with self.mic as source:
+            try:
                 self.recognizer.adjust_for_ambient_noise(source=source)
                 audio = self.recognizer.listen(source=source)
                 transcribed_txt = self.recognizer.recognize_google(
                     audio_data=audio, 
                     language=self.language
                 )
+                print("received audio")
                 return transcribed_txt
-        except sr.RequestError:
-            return "NO INTERNET CONNECTION"
+            except sr.RequestError:
+                return "NO INTERNET CONNECTION"
 
 
 class ToAudio:
     def __init__(self, language: str):
         self.language = language
-        # audio file name
-        self.audio_file = os.path.join(
-            os.getcwd(), 
-            os.getenv(key='AUDIO_FILE')
-        )
         self.delete_file()
     
-    def delete_file(self):
+    def delete_file(self) -> None:
         """
         delete audio file
         """
 
-        if os.path.exists(path=self.audio_file):
-            with open(file=self.audio_file, mode='rb') as f:
+        if os.path.exists(path=AUDIO_FILE):
+            with open(file=AUDIO_FILE, mode='rb') as f:
                 f.close()
-            os.remove(path=self.audio_file)
+            os.remove(path=AUDIO_FILE)
     
-    def text_to_speech(self, txt_msg: str):
+    def text_to_speech(self, txt_msg: str) -> None:
         """
         using Google Text to Speech module, 
         recite a text in a given language
@@ -62,8 +60,8 @@ class ToAudio:
         """
         
         audio = gTTS(text=txt_msg, lang=self.language)
-        audio.save(savefile=self.audio_file)
-        audio.timeout = 10
-        audio.speed = 'slow'
-        playsound.playsound(sound=self.audio_file)
+        audio.save(savefile=AUDIO_FILE)
+        audio.timeout = 5
+        audio.speed = 'medium'
+        playsound.playsound(sound=AUDIO_FILE)
         self.delete_file()   

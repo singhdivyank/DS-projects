@@ -1,44 +1,44 @@
 import os
 
+from consts import PRESCRIPTION_NAME
+
 
 class Prescription:
     def __init__(self, age: int, gender: str):
         self.age = age,
         self.gender = gender
-        self.prescription_file = os.path.join(
-            os.getcwd(), 
-            os.getenv(key='FILE_NAME')
-        )
         self.delete_file()
     
-    def delete_file(self):
+    def delete_file(self) -> None:
         """
         delete txt file
         """
         
-        if os.path.exists(path=self.prescription_file):
-            os.remove(path=self.prescription_file)
+        if os.path.exists(path=PRESCRIPTION_NAME):
+            os.remove(path=PRESCRIPTION_NAME)
     
-    def create_prescription(self, patient_notes: str, doc_notes: str):
+    def create_prescription(self, inital_msg: str, conversation: list, medication: str) -> None:
         """
-        write the conversation as a txt file
+        create a txt file summarizing patient's visit
 
         Params:
-            patient_notes (str): text from patient
-            doc_notes (str): text from doctor
+            initial_msg (str): message given by user at the start
+            conversation (list): conversation between patient and doctor
+            medication (str): medication prescribed by doctor
         """
-
+        
         # create the conversation
-        dialog = f"YOU: {patient_notes}\nJARVIS: {doc_notes}\n\n"
+        dialog = f"YOU: {inital_msg}\n"
+        for _, conv in enumerate(conversation):
+            dialog += f"JARVIS: {conv[0]}\nYOU: {conv[1]}\n"
+        dialog += f"JARVIS: {medication}"
 
-        # write the initial lines
-        if not os.path.exists(self.prescription_file):
-            content = f"AGE: {self.age}\nGENDER: {self.gender}\n\n"
-            with open(file=self.prescription_file, mode='w', encoding='utf8') as f:
+        # write to txt file
+        if not os.path.exists(PRESCRIPTION_NAME):
+            content = f"AGE: {self.age}\nGENDER: {self.gender}\n\n{dialog}"
+            with open(file=PRESCRIPTION_NAME, mode='w', encoding='utf8') as f:
                 f.write(content)
                 f.close()
         
-        with open(file=self.prescription_file, mode='a', encoding='utf8') as f:
-            f.write(dialog)
-            f.close()
+        print("created prescription...")
     
