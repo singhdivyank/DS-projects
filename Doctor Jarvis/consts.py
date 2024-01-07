@@ -1,11 +1,29 @@
-PRESCRIPTION_NAME = 'prescription.txt'
-AUDIO_FILE = 'voice.mp3'
+import os
+
+PRESCRIPTION_NAME = os.path.join(os.getcwd(), 'prescription.txt')
+AUDIO_FILE = os.path.join(os.getcwd(), 'voice.mp3')
 LLM_MODEL = 'gemini-pro'
+LLM_NAME = 'jarvis_backend'
+
+LANGUAGES = {
+    "english": "en",
+    "bengali": "bn",
+    "gujrati": "gu",
+    "hindi": "hi",
+    "kannada": "kn",
+    "malayalam": "ml",
+    "marathi": "mr",
+    "tamil": "ta",
+    "telugu": "te",
+    "urdu": "ur"
+}
+
 DIAGNOSIS_TEMPLATE = """
 You are a doctor and detecting the cause of a problem mentioned by the patient.\
 You are supposed to ask 3 questions to help you detect the problem. The questions must be of highest quality.\
 Note: restrict one phrase to a single question
 """
+
 MEDICATION_TEMPLATE = """
 You are a certified doctor in India and are supposed to prescribe medication for patients.\
 You have already had a ```conversation``` with the patient as mentioned.\

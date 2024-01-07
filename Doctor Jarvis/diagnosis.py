@@ -10,6 +10,7 @@ from langchain.prompts import ChatPromptTemplate
 
 from consts import (
     LLM_MODEL, 
+    LLM_NAME,
     DIAGNOSIS_TEMPLATE, 
     MEDICATION_TEMPLATE
 )
@@ -23,7 +24,7 @@ class DocJarvis:
         self.gender = gender
         self.history = ChatMessageHistory()
         self.llm = ChatGoogleGenerativeAI(
-            name='jarvis_backend', 
+            name=LLM_NAME, 
             temperature=0,
             model=LLM_MODEL,
             convert_system_message_to_human=True
@@ -63,6 +64,7 @@ class DocJarvis:
                 "conversation": conversation
             }
         ).content
+        print(response)
         return response
 
     def perform_diagnosis(self, usr_msg: str) -> List[str]:
@@ -79,4 +81,5 @@ class DocJarvis:
         chain = self.diagnosis_prompt | self.llm
         response = chain.invoke(input={"input": usr_msg}).content
         diag_ques = response.split("\n")
+        print("diagnosis results:: ", diag_ques)
         return diag_ques

@@ -20,13 +20,12 @@ class Translate:
         Returns:
             translation (str): translated text
         """
-
+        
         translated_txt = self.translator.translate(
             text=for_usr, 
             dest=self.lan_code if not llm_flag else 'en'
         )
-        translation = translated_txt.text
-        return translation
+        return translated_txt.text
     
     def get_msgs(self) -> List[str]:
         """
@@ -35,7 +34,7 @@ class Translate:
         Returns:
             List: all messages
         """
-
+        
         # introduction message
         MAIN_MSG = "send message from microphone. To stop, say 'thanks'"
         # instruction message
@@ -47,6 +46,4 @@ class Translate:
         main_message = self.translation(for_usr=MAIN_MSG, llm_flag=False) if not self.lan_code == 'en' else MAIN_MSG
         instr_message = self.translation(for_usr=INSTR_MSG, llm_flag=False) if not self.lan_code == 'en' else INSTR_MSG
         diag_message = self.translation(for_usr=DIAG_MSG, llm_flag=False) if not self.lan_code == 'en' else DIAG_MSG
-        
         return [main_message, instr_message, diag_message]
-    
